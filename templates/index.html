@@ -123,8 +123,17 @@ p {
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById("messages").innerHTML += "<p>Assistant: " + data.reply + "</p>";
+                var reply = data.reply;
+                document.getElementById("messages").innerHTML += "<p>Assistant: " + reply + "</p>";
+                // Speak the response
+                speak(reply);
             });
+        }
+
+        function speak(text) {
+            var synth = window.speechSynthesis;
+            var utterance = new SpeechSynthesisUtterance(text);
+            synth.speak(utterance);
         }
     </script>
 </body>
