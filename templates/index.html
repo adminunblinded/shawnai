@@ -1,3 +1,4 @@
+User
 <!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
@@ -100,19 +101,8 @@ p {
         transform: translateY(0);
     }
 }
-.speak-animation {
-    animation: speak 0.5s infinite alternate;
-}
-
-@keyframes speak {
-    0% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
-    100% { transform: translateY(0); }
-}
-    
 </style>
 <body>
-    <img id="avatar" src="avatar.png" alt="Avatar" style="display: none;">
     <h1>Chatbot</h1>
     <div id="chat-container">
         <div id="messages"></div>
@@ -125,41 +115,25 @@ p {
             var message = document.getElementById("user-input").value;
             document.getElementById("messages").innerHTML += "<p>User: " + message + "</p>";
             document.getElementById("user-input").value = "";
-    
-            // Show the avatar
-            var avatar = document.getElementById("avatar");
-            avatar.style.display = "block";
-    
-            // Start speaking and sync avatar animation
-            speak(message, avatar);
+            fetch('/send', {
+                method: 'POST',
+                body: JSON.stringify({message: message}),
+                headers:{
+                  'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                var reply = data.reply;
+                document.getElementById("messages").innerHTML += "<p>Assistant: " + reply + "</p>";
+                // Speak the response
+                speak(reply);
+            });
         }
-    
-        function speak(text, avatar) {
+
+        function speak(text) {
             var synth = window.speechSynthesis;
             var utterance = new SpeechSynthesisUtterance(text);
-            utterance.onstart = function(event) {
-                // Start avatar animation
-                avatar.classList.add("speak-animation");
-            };
-            utterance.onend = function(event) {
-                // End avatar animation
-                avatar.classList.remove("speak-animation");
-                // Fetch response from backend after speech is finished
-                fetch('/send', {
-                    method: 'POST',
-                    body: JSON.stringify({message: text}),
-                    headers:{
-                      'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    var reply = data.reply;
-                    document.getElementById("messages").innerHTML += "<p>Assistant: " + reply + "</p>";
-                    // Speak the response
-                    speak(reply, avatar);
-                });
-            };
             synth.speak(utterance);
         }
     </script>
