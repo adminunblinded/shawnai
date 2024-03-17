@@ -23,7 +23,7 @@ def index():
 def send():
     user_msg = request.json['message']
     context = ""
-    
+
     # Use a portion of the book text as context
     for book_context in reversed(book_contexts):
         if user_msg in book_context:
@@ -31,8 +31,8 @@ def send():
             break
     
     messages = [
-        {"role": "user", "content": user_msg},
-        {"role": "book_context", "content": context}
+        {"role": "user", "content": user_msg + "\n" + context},  # Include book context as part of user message
+        {"role": "assistant", "content": ""}  # Empty assistant message to trigger response
     ]
     
     response = openai.ChatCompletion.create(
