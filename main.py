@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file, jsonify
+from flask import Flask, request, render_template, send_file, jsonify, url_for
 import openai
 import requests
 import os
@@ -27,7 +27,7 @@ def generate_response(prompt):
 
 # Function to convert text to speech using Eleven Labs
 def text_to_speech(text, output_file):
-    voice_id = "21m00Tcm4TlvDq8ikWAM"  # Replace with the actual voice ID you want to use
+    voice_id = "your_voice_id"  # Replace with the actual voice ID you want to use
     url = f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}'
     headers = {
         'xi-api-key': ELEVEN_LABS_API_KEY,
@@ -64,13 +64,13 @@ def chat():
     bot_response = generate_response(user_input)
     
     # Use a temporary file to save the TTS response
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3", dir='static') as temp_file:
         output_file = temp_file.name
     
     success = text_to_speech(bot_response, output_file)
     
     if success:
-        return send_file(output_file, as_attachment=True)
+        return jsonify({"audio_url": url_for('static', filename=os.path.basename(output_file))})
     else:
         return jsonify({"error": "TTS conversion failed"}), 500
 
