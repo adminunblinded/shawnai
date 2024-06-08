@@ -4,7 +4,6 @@ import requests
 import os
 import io
 import speech_recognition as sr
-from pydub import AudioSegment
 
 app = Flask(__name__)
 
@@ -55,9 +54,7 @@ def text_to_speech(text):
 # Function to convert speech to text using speech_recognition
 def speech_to_text(audio_file):
     recognizer = sr.Recognizer()
-    audio = AudioSegment.from_file(audio_file)
-    audio.export("temp.wav", format="wav")
-    with sr.AudioFile("temp.wav") as source:
+    with sr.AudioFile(audio_file) as source:
         audio_data = recognizer.record(source)
         try:
             text = recognizer.recognize_google(audio_data)
