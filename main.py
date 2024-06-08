@@ -27,28 +27,32 @@ def generate_response(prompt):
 
 # Function to convert text to speech using Eleven Labs
 def text_to_speech(text, output_file):
-    url = 'https://api.elevenlabs.io/v1/text-to-speech'
+    voice_id = "21m00Tcm4TlvDq8ikWAM"  # Replace with the actual voice ID you want to use
+    url = f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}'
     headers = {
         'xi-api-key': ELEVEN_LABS_API_KEY,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg'
     }
     data = {
         "text": text,
+        "model_id": "eleven_monolingual_v1",
         "voice_settings": {
-            "voice_id": "en_us_male",
             "stability": 0.75,
             "similarity_boost": 0.75
         }
     }
-    response = requests.post(url, headers=headers, json=data)
+    response = requests.post(url, headers=headers, json=data, verify=False)
     
     if response.status_code == 200:
         with open(output_file, 'wb') as f:
-            f.write(response.content)
+            for chunk in response.iter_content(chunk_size=1024):
+                if chunk:
+                    f.write(chunk)
+        return True
     else:
         print(f"Error: {response.status_code}, {response.text}")
         return False
-    return True
 
 @app.route('/')
 def index():
