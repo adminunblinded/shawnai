@@ -1,7 +1,8 @@
-from flask import Flask, request, render_template, send_file
+from flask import Flask, request, render_template, send_file, jsonify
 import openai
 import requests
 import os
+import tempfile
 
 app = Flask(__name__)
 
@@ -46,6 +47,8 @@ def text_to_speech(text, output_file):
             f.write(response.content)
     else:
         print(f"Error: {response.status_code}, {response.text}")
+        return False
+    return True
 
 @app.route('/')
 def index():
@@ -56,10 +59,16 @@ def chat():
     user_input = request.form['user_input']
     bot_response = generate_response(user_input)
     
-    output_file = 'response.mp3'
-    text_to_speech(bot_response, output_file)
+    # Use a temporary file to save the TTS response
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
+        output_file = temp_file.name
     
-    return send_file(output_file, as_attachment=True)
+    success = text_to_speech(bot_response, output_file)
+    
+    if success:
+        return send_file(output_file, as_attachment=True)
+    else:
+        return jsonify({"error": "TTS conversion failed"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
