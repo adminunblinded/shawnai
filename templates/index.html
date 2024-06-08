@@ -7,10 +7,35 @@
 </head>
 <body>
     <h1>AI Voice Chatbot</h1>
-    <form action="/chat" method="post">
+    <form id="chat-form" action="/chat" method="post">
         <label for="user_input">Enter your message:</label>
         <input type="text" id="user_input" name="user_input" required>
         <button type="submit">Send</button>
     </form>
+    <div id="response">
+        <audio id="audio" controls style="display: none;"></audio>
+    </div>
+    
+    <script>
+        document.getElementById('chat-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(this);
+            const response = await fetch('/chat', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            if (data.audio_url) {
+                const audio = document.getElementById('audio');
+                audio.src = data.audio_url;
+                audio.style.display = 'block';
+                audio.play();
+            } else {
+                alert(data.error || 'An error occurred.');
+            }
+        });
+    </script>
 </body>
 </html>
