@@ -27,7 +27,7 @@ def generate_response(prompt):
 
 # Function to convert text to speech using Eleven Labs
 def text_to_speech(text):
-    voice_id = "your_voice_id"  # Replace with the actual voice ID you want to use
+    voice_id = "21m00Tcm4TlvDq8ikWAM"  # Replace with the actual voice ID you want to use
     url = f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}'
     headers = {
         'xi-api-key': ELEVEN_LABS_API_KEY,
