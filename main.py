@@ -3,6 +3,8 @@ import openai
 import requests
 import os
 import io
+import speech_recognition as sr
+from pydub import AudioSegment
 
 app = Flask(__name__)
 
@@ -50,14 +52,37 @@ def text_to_speech(text):
         print(f"Error: {response.status_code}, {response.text}")
         return None
 
+# Function to convert speech to text using speech_recognition
+def speech_to_text(audio_file):
+    recognizer = sr.Recognizer()
+    audio = AudioSegment.from_file(audio_file)
+    audio.export("temp.wav", format="wav")
+    with sr.AudioFile("temp.wav") as source:
+        audio_data = recognizer.record(source)
+        try:
+            text = recognizer.recognize_google(audio_data)
+            return text
+        except sr.UnknownValueError:
+            return "Sorry, I could not understand the audio."
+        except sr.RequestError as e:
+            return f"Could not request results; {e}"
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    user_input = request.form['user_input']
-    bot_response = generate_response(user_input)
+    if 'audio_data' not in request.files:
+        return jsonify({"error": "No audio file provided"}), 400
+
+    audio_file = request.files['audio_data']
+    user_text = speech_to_text(audio_file)
+    
+    if "Sorry" in user_text:
+        return jsonify({"error": user_text}), 400
+
+    bot_response = generate_response(user_text)
     
     audio_data = text_to_speech(bot_response)
     
