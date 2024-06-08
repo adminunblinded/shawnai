@@ -26,13 +26,16 @@
                 body: formData
             });
             
-            const data = await response.json();
-            if (data.audio_url) {
+            if (response.ok) {
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
                 const audio = document.getElementById('audio');
-                audio.src = data.audio_url;
+                audio.src = audioUrl;
                 audio.style.display = 'block';
                 audio.play();
             } else {
+                const data = await response.json();
                 alert(data.error || 'An error occurred.');
             }
         });
