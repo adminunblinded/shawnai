@@ -7,8 +7,8 @@ import tempfile
 app = Flask(__name__)
 
 # Set your API keys here
-OPENAI_API_KEY = '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'
-ELEVEN_LABS_API_KEY = 'sk_4ac025acfe13a4b650d918f22a4c20939cc4c280ca229f08'
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+ELEVEN_LABS_API_KEY = os.getenv('ELEVEN_LABS_API_KEY')
 
 # Initialize OpenAI
 openai.api_key = OPENAI_API_KEY
@@ -16,7 +16,7 @@ openai.api_key = OPENAI_API_KEY
 # Function to generate a response from OpenAI
 def generate_response(prompt):
     response = openai.ChatCompletion.create(
-        model="gpt-4-turbo",
+        model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": prompt}
