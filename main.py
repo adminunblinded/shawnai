@@ -1,8 +1,7 @@
 from flask import Flask, request, jsonify
 import openai
 import requests
-import wave
-import numpy as np
+from pydub import AudioSegment
 from io import BytesIO
 import os
 
@@ -11,22 +10,6 @@ app = Flask(__name__)
 # Set your API keys here
 openai.api_key = os.getenv('OPENAI_API_KEY')
 eleven_labs_api_key = os.getenv('ELEVEN_LABS_API_KEY')
-
-def convert_audio_to_wav(audio_file):
-    # Read the audio data from the file
-    audio_bytes = audio_file.read()
-    
-    # Convert WebM to WAV using wave and numpy
-    with wave.open(BytesIO(audio_bytes), 'rb') as webm_audio:
-        params = webm_audio.getparams()
-        frames = webm_audio.readframes(params.nframes)
-        
-        # Create a new WAV file in-memory
-        with BytesIO() as wav_buffer:
-            with wave.open(wav_buffer, 'wb') as wav_audio:
-                wav_audio.setparams((1, 2, 16000, 0, 'NONE', 'not compressed'))
-                wav_audio.writeframes(frames)
-            return wav_buffer.getvalue()
 
 @app.route('/')
 def index():
@@ -96,12 +79,15 @@ def index():
 def process_audio():
     # Get the audio file from the request
     audio_file = request.files['audio']
+    audio = AudioSegment.from_file(audio_file, format='webm')
 
-    # Convert the audio file to WAV format
-    wav_audio = convert_audio_to_wav(audio_file)
-
+    # Convert audio to the format expected by OpenAI Whisper API (16-bit 16000 Hz mono WAV)
+    buffer = BytesIO()
+    audio.export(buffer, format='wav')
+    buffer.seek(0)
+    
     # Transcribe the audio using OpenAI's Whisper
-    transcript = openai.Audio.transcribe("whisper-1", wav_audio)
+    transcript = openai.Audio.transcribe("whisper-1", buffer)
 
     # Send the transcription to ChatGPT
     prompt = transcript['text']
