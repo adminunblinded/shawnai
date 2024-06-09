@@ -35,7 +35,7 @@ def transcribe():
         return f"Error: {transcribe_response.status_code} - {transcribe_response.text}", 500
 
     # Get ChatGPT response
-    response =  openai.ChatCompletion.create(
+    response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
@@ -52,7 +52,7 @@ def transcribe():
     }
 
     data = {
-        "text": response.choices[0].text,
+        "text": response["choices"][0]["message"]["content"],
         "voice_settings": {
             "stability": 0.5,
             "similarity_boost": 0.5
@@ -67,6 +67,9 @@ def transcribe():
         return Response(audio_bytes, mimetype="audio/mpeg")
     else:
         return f"Error: {response.status_code} - {response.text}", 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
 
 if __name__ == '__main__':
     app.run(debug=True)
