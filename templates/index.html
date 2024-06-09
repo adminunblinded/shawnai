@@ -9,34 +9,44 @@
     <style>
         body {
             background-color: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
         }
         .container {
-            margin-top: 50px;
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
         .form-group {
-            margin-bottom: 1.5rem;
+            width: 100%;
         }
         #response {
             margin-top: 20px;
+        }
+        .custom-audio {
+            width: 100%;
+            margin-top: 15px;
+            background: #f1f1f1;
+            border-radius: 5px;
+            padding: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <h1 class="text-center">AI Voice Chatbot</h1>
-                <form id="chat-form" action="/chat" method="post" class="form-inline">
-                    <div class="form-group mb-2 mr-2">
-                        <label for="user_input" class="sr-only">Enter your message:</label>
-                        <input type="text" class="form-control" id="user_input" name="user_input" placeholder="Enter your message" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary mb-2">Send</button>
-                </form>
-                <div id="response" class="text-center">
-                    <audio id="audio" controls style="display: none;"></audio>
-                </div>
+        <h1 class="text-center">AI Voice Chatbot</h1>
+        <form id="chat-form" action="/chat" method="post" class="form-inline justify-content-center">
+            <div class="form-group mb-2">
+                <input type="text" class="form-control" id="user_input" name="user_input" placeholder="Enter your message" required>
             </div>
+            <button type="submit" class="btn btn-primary mb-2 ml-2">Send</button>
+        </form>
+        <div id="response" class="text-center">
+            <audio id="audio" class="custom-audio" controls style="display: none;"></audio>
         </div>
     </div>
 
