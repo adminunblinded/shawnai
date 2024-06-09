@@ -16,7 +16,7 @@ openai.api_key = OPENAI_API_KEY
 # Function to generate a response from OpenAI
 def generate_response(prompt):
     response = openai.ChatCompletion.create(
-        model="gpt-4-turbo",
+        model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": prompt}
@@ -27,7 +27,7 @@ def generate_response(prompt):
 
 # Function to convert text to speech using Eleven Labs
 def text_to_speech(text):
-    voice_id = "your_voice_id"  # Replace with the actual voice ID you want to use
+    voice_id = "2EiwWnXFnvU5JabPnv8n"  # Replace with the actual voice ID you want to use
     url = f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}'
     headers = {
         'xi-api-key': ELEVEN_LABS_API_KEY,
@@ -42,7 +42,7 @@ def text_to_speech(text):
             "similarity_boost": 0.75
         }
     }
-    response = requests.post(url, headers=headers, json=data, verify=False)
+    response = requests.post(url, headers=headers, json=data)
     
     if response.status_code == 200:
         return io.BytesIO(response.content)
