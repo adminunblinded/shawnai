@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, Response
 import openai
-import elevenlabs
 import io
 import pyaudio
 
