@@ -2,14 +2,15 @@ from flask import Flask, render_template, request, Response
 import openai
 import requests
 import io
+import os
 
 app = Flask(__name__)
 
 # Replace with your OpenAI API key
-openai.api_key = "sk-proj-pxtPEirdxZrDlYPv52EjT3BlbkFJEOGIhGI1Mwj5yjZu2bAr"
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # Replace with your ElevenLabs API key
-ELEVENLABS_API_KEY = "sk_4ac025acfe13a4b650d918f22a4c20939cc4c280ca229f08"
+ELEVENLABS_API_KEY = os.getenv('ELEVEN_LABS_API_KEY')
 
 @app.route('/')
 def index():
