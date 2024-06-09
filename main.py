@@ -3,7 +3,7 @@ import openai
 import requests
 import os
 import io
-import wave
+from pydub import AudioSegment
 import speech_recognition as sr
 
 app = Flask(__name__)
@@ -52,6 +52,14 @@ def text_to_speech(text):
         print(f"Error: {response.status_code}, {response.text}")
         return None
 
+# Function to convert WebM to WAV
+def convert_webm_to_wav(webm_audio):
+    audio = AudioSegment.from_file(webm_audio, format="webm")
+    wav_io = io.BytesIO()
+    audio.export(wav_io, format="wav")
+    wav_io.seek(0)
+    return wav_io
+
 # Function to convert speech to text using speech_recognition
 def speech_to_text(audio_data):
     recognizer = sr.Recognizer()
@@ -64,15 +72,6 @@ def speech_to_text(audio_data):
             return "Sorry, I could not understand the audio."
         except sr.RequestError as e:
             return f"Could not request results; {e}"
-
-# Function to convert WebM to WAV
-def convert_webm_to_wav(webm_audio):
-    with wave.open(webm_audio, "wb") as wav_file:
-        wav_file.setnchannels(1)
-        wav_file.setsampwidth(2)
-        wav_file.setframerate(16000)
-        wav_file.writeframes(webm_audio.read())
-    return webm_audio
 
 @app.route('/')
 def index():
