@@ -1,54 +1,44 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Audio Recording and Transcription</title>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Voice Chatbot</title>
+</head>
+<body>
+    <h1>AI Voice Chatbot</h1>
+    <form id="chat-form" action="/chat" method="post">
+        <label for="user_input">Enter your message:</label>
+        <input type="text" id="user_input" name="user_input" required>
+        <button type="submit">Send</button>
+    </form>
+    <div id="response">
+        <audio id="audio" controls style="display: none;"></audio>
+    </div>
+    
     <script>
-      let mediaRecorder;
-      let audioChunks = [];
-
-      function startRecording() {
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(stream => {
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.start();
-
-            mediaRecorder.ondataavailable = event => {
-              audioChunks.push(event.data);
-            };
-          })
-          .catch(error => {
-            console.error('Error:', error);
-          });
-      }
-
-      function stopRecording() {
-        mediaRecorder.stop();
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        audioChunks = [];
-
-        const formData = new FormData();
-        formData.append('audio', audioBlob, 'audio.webm');
-
-        fetch('/transcribe', {
-          method: 'POST',
-          body: formData
-        })
-        .then(response => response.blob())
-        .then(blob => {
-          const audio = new Audio();
-          audio.src = URL.createObjectURL(blob);
-          audio.play();
-        })
-        .catch(error => {
-          console.error('Error:', error);
+        document.getElementById('chat-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(this);
+            const response = await fetch('/chat', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                const audio = document.getElementById('audio');
+                audio.src = audioUrl;
+                audio.style.display = 'block';
+                audio.play();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'An error occurred.');
+            }
         });
-      }
     </script>
-  </head>
-  <body>
-    <h1>Audio Recording and Transcription</h1>
-    <button onclick="startRecording()">Record</button>
-    <button onclick="stopRecording()">Stop</button>
-    <audio id="audio" controls></audio>
-  </body>
+</body>
 </html>
