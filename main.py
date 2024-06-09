@@ -6,7 +6,7 @@ import io
 app = Flask(__name__)
 
 # Replace with your OpenAI API key
-openai.api_key = "sk-proj-6PuG10ra5RdkXVoO4SltT3BlbkFJfNaociDXS1ybfEmQzQd5"
+openai.api_key = "sk-proj-pxtPEirdxZrDlYPv52EjT3BlbkFJEOGIhGI1Mwj5yjZu2bAr"
 
 # Replace with your ElevenLabs API key
 ELEVENLABS_API_KEY = "sk_4ac025acfe13a4b650d918f22a4c20939cc4c280ca229f08"
