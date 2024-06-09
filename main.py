@@ -1,75 +1,122 @@
-from flask import Flask, render_template, request, Response
+from flask import Flask, request, jsonify
 import openai
 import requests
-import io
-import os
+from pydub import AudioSegment
+from io import BytesIO
 
 app = Flask(__name__)
 
-# Replace with your OpenAI API key
+# Set your API keys here
 openai.api_key = os.getenv('OPENAI_API_KEY')
-
-# Replace with your ElevenLabs API key
-ELEVENLABS_API_KEY = os.getenv('ELEVEN_LABS_API_KEY')
+eleven_labs_api_key = os.getenv('ELEVEN_LABS_API_KEY')
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return '''
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Audio Recording</title>
+    </head>
+    <body>
+        <h1>Audio Recording Interface</h1>
+        <button id="recordButton">Record</button>
+        <button id="stopButton" disabled>Stop</button>
+        <audio id="audioPlayback" controls></audio>
 
-@app.route('/transcribe', methods=['POST'])
-def transcribe():
-    audio_data = request.get_data()
+        <script>
+            let mediaRecorder;
+            let audioChunks = [];
 
-    # Send audio data to OpenAI API for transcription
-    headers = {
-        "Authorization": f"Bearer {openai.api_key}",
-        "Content-Type": "audio/webm"
-    }
+            const recordButton = document.getElementById('recordButton');
+            const stopButton = document.getElementById('stopButton');
+            const audioPlayback = document.getElementById('audioPlayback');
 
-    audio_file = {"file": audio_data, "model": "whisper-1"}
-    transcribe_response = requests.post("https://api.openai.com/v1/audio/transcriptions", headers=headers, files=audio_file)
+            recordButton.addEventListener('click', async () => {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
 
-    if transcribe_response.status_code == 200:
-        text = transcribe_response.json()["transcription"]
-    else:
-        return f"Error: {transcribe_response.status_code} - {transcribe_response.text}", 500
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    audioPlayback.src = audioUrl;
 
-    # Get ChatGPT response
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": text}
-        ],
-        max_tokens=1048
+                    const formData = new FormData();
+                    formData.append('audio', audioBlob, 'recording.webm');
+
+                    const response = await fetch('/process_audio', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    const audio = new Audio(result.audio_url);
+                    audio.play();
+                };
+
+                mediaRecorder.start();
+                recordButton.disabled = true;
+                stopButton.disabled = false;
+            });
+
+            stopButton.addEventListener('click', () => {
+                mediaRecorder.stop();
+                recordButton.disabled = false;
+                stopButton.disabled = true;
+            });
+        </script>
+    </body>
+    </html>
+    '''
+
+@app.route('/process_audio', methods=['POST'])
+def process_audio():
+    # Get the audio file from the request
+    audio_file = request.files['audio']
+    audio = AudioSegment.from_file(audio_file, format='webm')
+
+    # Convert audio to the format expected by OpenAI Whisper API (16-bit 16000 Hz mono WAV)
+    buffer = BytesIO()
+    audio.export(buffer, format='wav')
+    buffer.seek(0)
+    
+    # Transcribe the audio using OpenAI's Whisper
+    transcript = openai.Audio.transcribe("whisper-1", buffer)
+
+    # Send the transcription to ChatGPT
+    prompt = transcript['text']
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        max_tokens=150
     )
 
-    # Synthesize audio using ElevenLabs API
-    headers = {
-        "Accept": "audio/mpeg",
-        "Content-Type": "application/json",
-        "xi-api-key": ELEVENLABS_API_KEY
-    }
+    chat_response = response.choices[0].text.strip()
 
-    data = {
-        "text": response["choices"][0]["message"]["content"],
-        "voice_settings": {
-            "stability": 0.5,
-            "similarity_boost": 0.5
+    # Use Eleven Labs API to synthesize speech from ChatGPT's response
+    eleven_labs_response = requests.post(
+        "https://api.elevenlabs.io/v1/text-to-speech",
+        headers={
+            "Authorization": f"Bearer {eleven_labs_api_key}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "text": chat_response,
+            "voice": "21m00Tcm4TlvDq8ikWAM"  # Replace with the desired voice name
         }
-    }
+    )
 
-    url = "https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL"
-    response = requests.post(url, headers=headers, json=data)
-
-    if response.status_code == 200:
-        audio_bytes = response.content
-        return Response(audio_bytes, mimetype="audio/mpeg")
+    if eleven_labs_response.status_code == 200:
+        audio_content = eleven_labs_response.content
+        audio_url = f"data:audio/wav;base64,{audio_content.encode('base64').decode()}"
+        return jsonify({"audio_url": audio_url})
     else:
-        return f"Error: {response.status_code} - {response.text}", 500
-
-if __name__ == '__main__':
-    app.run(debug=True)
+        return jsonify({"error": "Failed to synthesize speech"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
