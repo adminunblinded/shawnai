@@ -3,6 +3,7 @@ import openai
 import requests
 import os
 import io
+import wave
 import speech_recognition as sr
 
 app = Flask(__name__)
@@ -64,6 +65,15 @@ def speech_to_text(audio_data):
         except sr.RequestError as e:
             return f"Could not request results; {e}"
 
+# Function to convert WebM to WAV
+def convert_webm_to_wav(webm_audio):
+    with wave.open(webm_audio, "wb") as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(16000)
+        wav_file.writeframes(webm_audio.read())
+    return webm_audio
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -75,7 +85,11 @@ def chat():
 
     audio_file = request.files['audio_data']
     audio_data = io.BytesIO(audio_file.read())
-    user_text = speech_to_text(audio_data)
+    
+    # Convert WebM to WAV
+    wav_audio_data = convert_webm_to_wav(audio_data)
+    
+    user_text = speech_to_text(wav_audio_data)
     
     if "Sorry" in user_text:
         return jsonify({"error": user_text}), 400
