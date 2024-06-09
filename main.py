@@ -1,55 +1,66 @@
-from flask import Flask, request, render_template, send_file
-import io
+from flask import Flask, render_template, request, Response
 import openai
-import requests
+import elevenlabs
+import io
+import pyaudio
 
 app = Flask(__name__)
 
-# Set your API keys here
-OPENAI_API_KEY = 'sk-proj-ijdoTZeLeauBlHVCiIMvT3BlbkFJmN4pZ1QUH8BUewXh29Ut'
-ELEVEN_LABS_API_KEY = 'sk_4ac025acfe13a4b650d918f22a4c20939cc4c280ca229f08'
+# Replace with your OpenAI API key
+openai.api_key = "sk-proj-ijdoTZeLeauBlHVCiIMvT3BlbkFJmN4pZ1QUH8BUewXh29UtY"
 
-openai.api_key = OPENAI_API_KEY
+# Replace with your Elevenlabs API key
+elevenlabs_client = elevenlabs.set_key("sk_4ac025acfe13a4b650d918f22a4c20939cc4c280ca229f08")
+
+# Configure PyAudio
+audio = pyaudio.PyAudio()
+stream = None
+audio_frames = []
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/process_audio', methods=['POST'])
-def process_audio():
-    audio = request.files['audio']
-    audio_data = audio.read()
+@app.route('/record', methods=['POST'])
+def record():
+    global stream
+    stream = audio.open(format=pyaudio.paInt16,
+                        channels=1,
+                        rate=16000,
+                        input=True,
+                        frames_per_buffer=1024)
+    return "Recording started"
 
-    # Transcribe audio using OpenAI's Whisper model
-    response = openai.Audio.transcribe("whisper-1", audio_data)
-    transcription = response['text']
+@app.route('/stop', methods=['POST'])
+def stop():
+    global stream, audio_frames
+    stream.stop_stream()
+    stream.close()
+    audio_frames = b''.join(audio_frames)
+    audio_data = io.BytesIO(audio_frames)
+
+    # Transcribe audio using OpenAI API
+    transcript = openai.Audio.transcribe("whisper-1", audio_data)
+    text = transcript["text"]
 
     # Get ChatGPT response
-    chat_response = openai.Completion.create(
-        model="gpt-3.5-turbo",
-        prompt=transcription,
-        max_tokens=150
-    )
-    chat_text = chat_response.choices[0].text.strip()
-
-    # Convert ChatGPT response to speech using Eleven Labs API
-    tts_response = requests.post(
-        'https://api.elevenlabs.io/v1/speech',
-        headers={
-            'Authorization': f'Bearer {ELEVEN_LABS_API_KEY}',
-            'Content-Type': 'application/json'
-        },
-        json={
-            'text': chat_text,
-            'voice_settings': {
-                'voice': '21m00Tcm4TlvDq8ikWAM'
-            }
-        }
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=text,
+        max_tokens=1024,
+        n=1,
+        stop=None,
+        temperature=0.7,
     )
 
-    audio_content = io.BytesIO(tts_response.content)
+    # Synthesize audio using Elevenlabs API
+    audio_bytes = elevenlabs_client.generate(
+        text=response.choices[0].text,
+        voice="Rachel",
+        model="elevenlabs-neural",
+    )
 
-    return send_file(audio_content, mimetype='audio/mpeg')
+    return Response(audio_bytes, mimetype="audio/mpeg")
 
 if __name__ == '__main__':
     app.run(debug=True)
