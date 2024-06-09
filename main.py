@@ -3,6 +3,7 @@ import openai
 import requests
 from pydub import AudioSegment
 from io import BytesIO
+import os
 
 app = Flask(__name__)
 
