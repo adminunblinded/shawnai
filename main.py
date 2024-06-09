@@ -1,136 +1,70 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, render_template, send_file, jsonify
 import openai
 import requests
-import subprocess
-from io import BytesIO
 import os
+import io
 
 app = Flask(__name__)
 
 # Set your API keys here
-openai.api_key = os.getenv('OPENAI_API_KEY')
-eleven_labs_api_key = os.getenv('ELEVEN_LABS_API_KEY')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+ELEVEN_LABS_API_KEY = os.getenv('ELEVEN_LABS_API_KEY')
+
+# Initialize OpenAI
+openai.api_key = OPENAI_API_KEY
+
+# Function to generate a response from OpenAI
+def generate_response(prompt):
+    response = openai.ChatCompletion.create(
+        model="gpt-4-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=150
+    )
+    return response['choices'][0]['message']['content'].strip()
+
+# Function to convert text to speech using Eleven Labs
+def text_to_speech(text):
+    voice_id = "your_voice_id"  # Replace with the actual voice ID you want to use
+    url = f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}'
+    headers = {
+        'xi-api-key': ELEVEN_LABS_API_KEY,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg'
+    }
+    data = {
+        "text": text,
+        "model_id": "eleven_monolingual_v1",
+        "voice_settings": {
+            "stability": 0.75,
+            "similarity_boost": 0.75
+        }
+    }
+    response = requests.post(url, headers=headers, json=data, verify=False)
+    
+    if response.status_code == 200:
+        return io.BytesIO(response.content)
+    else:
+        print(f"Error: {response.status_code}, {response.text}")
+        return None
 
 @app.route('/')
 def index():
-    return '''
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Audio Recording</title>
-    </head>
-    <body>
-        <h1>Audio Recording Interface</h1>
-        <button id="recordButton">Record</button>
-        <button id="stopButton" disabled>Stop</button>
-        <audio id="audioPlayback" controls></audio>
+    return render_template('index.html')
 
-        <script>
-            let mediaRecorder;
-            let audioChunks = [];
-
-            const recordButton = document.getElementById('recordButton');
-            const stopButton = document.getElementById('stopButton');
-            const audioPlayback = document.getElementById('audioPlayback');
-
-            recordButton.addEventListener('click', async () => {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                
-                mediaRecorder.ondataavailable = event => {
-                    audioChunks.push(event.data);
-                };
-
-                mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    const audioUrl = URL.createObjectURL(audioBlob);
-                    audioPlayback.src = audioUrl;
-
-                    const formData = new FormData();
-                    formData.append('audio', audioBlob, 'recording.webm');
-
-                    const response = await fetch('/process_audio', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    const result = await response.json();
-                    const audio = new Audio(result.audio_url);
-                    audio.play();
-                };
-
-                mediaRecorder.start();
-                recordButton.disabled = true;
-                stopButton.disabled = false;
-            });
-
-            stopButton.addEventListener('click', () => {
-                mediaRecorder.stop();
-                recordButton.disabled = false;
-                stopButton.disabled = true;
-            });
-        </script>
-    </body>
-    </html>
-    '''
-
-@app.route('/process_audio', methods=['POST'])
-def process_audio():
-    # Get the audio file from the request
-    audio_file = request.files['audio']
-    audio_data = audio_file.read()
-
-    # Convert audio to the format expected by OpenAI Whisper API (16-bit 16000 Hz mono WAV)
-    input_audio = BytesIO(audio_data)
-    output_audio = BytesIO()
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_input = request.form['user_input']
+    bot_response = generate_response(user_input)
     
-    process = subprocess.Popen(
-        ['ffmpeg', '-i', 'pipe:0', '-f', 'wav', '-ac', '1', '-ar', '16000', 'pipe:1'],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
+    audio_data = text_to_speech(bot_response)
     
-    output, error = process.communicate(input=input_audio.read())
-    if process.returncode != 0:
-        return jsonify({"error": "Audio conversion failed"}), 500
-    
-    output_audio.write(output)
-    output_audio.seek(0)
-
-    # Transcribe the audio using OpenAI's Whisper
-    transcript = openai.Audio.transcribe("whisper-1", output_audio)
-
-    # Send the transcription to ChatGPT
-    prompt = transcript['text']
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=prompt,
-        max_tokens=150
-    )
-
-    chat_response = response.choices[0].text.strip()
-
-    # Use Eleven Labs API to synthesize speech from ChatGPT's response
-    eleven_labs_response = requests.post(
-        "https://api.elevenlabs.io/v1/text-to-speech",
-        headers={
-            "Authorization": f"Bearer {eleven_labs_api_key}",
-            "Content-Type": "application/json"
-        },
-        json={
-            "text": chat_response,
-            "voice": "Joanna"  # Replace with the desired voice name
-        }
-    )
-
-    if eleven_labs_response.status_code == 200:
-        audio_content = eleven_labs_response.content
-        audio_url = f"data:audio/wav;base64,{audio_content.encode('base64').decode()}"
-        return jsonify({"audio_url": audio_url})
+    if audio_data:
+        return send_file(audio_data, mimetype='audio/mpeg', as_attachment=False, attachment_filename='response.mp3')
     else:
-        return jsonify({"error": "Failed to synthesize speech"}), 500
+        return jsonify({"error": "TTS conversion failed"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
