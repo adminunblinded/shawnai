@@ -75,7 +75,7 @@ def generate_relevant_response(prompt, chunk):
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
-            {"role": "system", "content": "You are an expert on the book 'Influence Group Influence and MSPM Super book' by Sean Callagy. Answer questions based on this book. Avoid mentioning any sources, including the name of the book, and speak in the first person as if you were Sean Callagy."},
+            {"role": "system", "content": "You are an expert on the book 'Influence Group Influence and MSPM Super book' by Sean Callagy. Answer questions based on this book. Avoid mentioning any sources, including the name of the book, and speak in the first person as if you were Sean Callagy. Keep your responses concise; each response should be 500 characters max."},
             {"role": "user", "content": chunk},
             {"role": "user", "content": prompt}
         ],
