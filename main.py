@@ -27,7 +27,11 @@ def transcribe():
 
     audio_file = {"file": audio_data, "model": "whisper-1"}
     transcribe_response = requests.post("https://api.openai.com/v1/audio/transcriptions", headers=headers, files=audio_file)
-    text = transcribe_response.json()["text"]
+
+    if transcribe_response.status_code == 200:
+        text = transcribe_response.json()["transcription"]
+    else:
+        return f"Error: {transcribe_response.status_code} - {transcribe_response.text}", 500
 
     # Get ChatGPT response
     response = openai.Completion.create(
