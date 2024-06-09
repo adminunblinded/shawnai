@@ -18,9 +18,10 @@ def index():
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
     audio_data = request.get_data()
+    audio_file = io.BytesIO(audio_data)
 
     # Send audio data to OpenAI API for transcription
-    transcribe_response = openai.Audio.transcribe("whisper-1", audio_data)
+    transcribe_response = openai.Audio.transcribe("whisper-1", audio_file)
     text = transcribe_response["text"]
 
     # Get ChatGPT response
