@@ -35,14 +35,13 @@ def transcribe():
         return f"Error: {transcribe_response.status_code} - {transcribe_response.text}", 500
 
     # Get ChatGPT response
-    response = openai.Completion.create(
+    response =  openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        engine="text-davinci-003",
-        prompt=text,
-        max_tokens=1024,
-        n=1,
-        stop=None,
-        temperature=0.7,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": text}
+        ],
+        max_tokens=1048
     )
 
     # Synthesize audio using ElevenLabs API
