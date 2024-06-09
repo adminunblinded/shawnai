@@ -4,32 +4,61 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Voice Chatbot</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        #response {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>AI Voice Chatbot</h1>
-    <form id="chat-form" action="/chat" method="post">
-        <label for="user_input">Enter your message:</label>
-        <input type="text" id="user_input" name="user_input" required>
-        <button type="submit">Send</button>
-    </form>
-    <div id="response">
-        <audio id="audio" controls style="display: none;"></audio>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <h1 class="text-center">AI Voice Chatbot</h1>
+                <form id="chat-form" action="/chat" method="post" class="form-inline">
+                    <div class="form-group mb-2 mr-2">
+                        <label for="user_input" class="sr-only">Enter your message:</label>
+                        <input type="text" class="form-control" id="user_input" name="user_input" placeholder="Enter your message" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary mb-2">Send</button>
+                </form>
+                <div id="response" class="text-center">
+                    <audio id="audio" controls style="display: none;"></audio>
+                </div>
+            </div>
+        </div>
     </div>
-    
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
     <script>
         document.getElementById('chat-form').addEventListener('submit', async function(event) {
             event.preventDefault();
-            
+
             const formData = new FormData(this);
             const response = await fetch('/chat', {
                 method: 'POST',
                 body: formData
             });
-            
+
             if (response.ok) {
                 const audioBlob = await response.blob();
                 const audioUrl = URL.createObjectURL(audioBlob);
-                
+
                 const audio = document.getElementById('audio');
                 audio.src = audioUrl;
                 audio.style.display = 'block';
