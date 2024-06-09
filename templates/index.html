@@ -121,17 +121,14 @@
         <div class="chat-box" id="chat-box">
             <div class="chat-message bot">
                 <img src="https://miro.medium.com/v2/resize:fit:1400/1*lxuPZZ1McCgiXNok5_Vlfg.jpeg" alt="Bot Icon" width="40" height="40">
-
                 <div>Hello, I am a Chatbot, how may I help you?</div>
             </div>
         </div>
-
         <div class="chat-footer">
             <input type="text" class="chat-input" id="user_input" placeholder="Enter your message" required>
             <button class="send-btn" id="send-btn">Send</button>
         </div>
     </div>
-
     <script>
         document.getElementById('send-btn').addEventListener('click', sendMessage);
         document.getElementById('user_input').addEventListener('keydown', function(event) {
@@ -161,7 +158,20 @@
                     const audioUrl = URL.createObjectURL(audioBlob);
 
                     const audio = new Audio(audioUrl);
-                    audio.play();
+
+                    audio.addEventListener('canplaythrough', () => {
+                        const playPromise = audio.play();
+                        if (playPromise !== undefined) {
+                            playPromise.then(() => {
+                                // Automatic playback started!
+                            }).catch(error => {
+                                // Auto-play was prevented
+                                // Show a UI element to let the user manually start playback
+                                console.log('Auto-play was prevented');
+                            });
+                        }
+                    });
+                    
                     addMessage('bot', 'I have sent you an audio response.');
                 } else {
                     const data = await response.json();
