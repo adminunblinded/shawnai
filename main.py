@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import openai
 import requests
-from pydub import AudioSegment
+import subprocess
 from io import BytesIO
 import os
 
@@ -79,15 +79,28 @@ def index():
 def process_audio():
     # Get the audio file from the request
     audio_file = request.files['audio']
-    audio = AudioSegment.from_file(audio_file, format='webm')
+    audio_data = audio_file.read()
 
     # Convert audio to the format expected by OpenAI Whisper API (16-bit 16000 Hz mono WAV)
-    buffer = BytesIO()
-    audio.export(buffer, format='wav')
-    buffer.seek(0)
+    input_audio = BytesIO(audio_data)
+    output_audio = BytesIO()
     
+    process = subprocess.Popen(
+        ['ffmpeg', '-i', 'pipe:0', '-f', 'wav', '-ac', '1', '-ar', '16000', 'pipe:1'],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    
+    output, error = process.communicate(input=input_audio.read())
+    if process.returncode != 0:
+        return jsonify({"error": "Audio conversion failed"}), 500
+    
+    output_audio.write(output)
+    output_audio.seek(0)
+
     # Transcribe the audio using OpenAI's Whisper
-    transcript = openai.Audio.transcribe("whisper-1", buffer)
+    transcript = openai.Audio.transcribe("whisper-1", output_audio)
 
     # Send the transcription to ChatGPT
     prompt = transcript['text']
