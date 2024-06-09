@@ -1,54 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>AI Voice Chatbot</title>
-</head>
-<body>
-    <h1>AI Voice Chatbot</h1>
-    <button id="recordButton">Record</button>
-    <button id="stopButton" disabled>Stop</button>
+<html>
+  <head>
+    <title>Audio Recording and Transcription</title>
     <script>
-        let mediaRecorder;
-        let audioChunks = [];
+      let stream;
 
-        const recordButton = document.getElementById('recordButton');
-        const stopButton = document.getElementById('stopButton');
-
-        recordButton.addEventListener('click', async () => {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-
-            mediaRecorder.ondataavailable = event => {
-                audioChunks.push(event.data);
-            };
-
-            mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                const formData = new FormData();
-                formData.append('audio', audioBlob);
-
-                const response = await fetch('/process_audio', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const audioUrl = await response.text();
-                const audio = new Audio(audioUrl);
-                audio.play();
-            };
-
-            mediaRecorder.start();
-            recordButton.disabled = true;
-            stopButton.disabled = false;
+      function startRecording() {
+        fetch('/record', {
+          method: 'POST',
+        })
+        .then(response => response.text())
+        .then(result => {
+          console.log(result);
+        })
+        .catch(error => {
+          console.error('Error:', error);
         });
+      }
 
-        stopButton.addEventListener('click', () => {
-            mediaRecorder.stop();
-            recordButton.disabled = false;
-            stopButton.disabled = true;
-            audioChunks = [];
+      function stopRecording() {
+        fetch('/stop', {
+          method: 'POST',
+        })
+        .then(response => response.blob())
+        .then(blob => {
+          const audio = new Audio();
+          audio.src = URL.createObjectURL(blob);
+          audio.play();
+        })
+        .catch(error => {
+          console.error('Error:', error);
         });
+      }
     </script>
-</body>
+  </head>
+  <body>
+    <h1>Audio Recording and Transcription</h1>
+    <button onclick="startRecording()">Record</button>
+    <button onclick="stopRecording()">Stop</button>
+    <audio id="audio" controls></audio>
+  </body>
 </html>
