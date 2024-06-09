@@ -7,56 +7,36 @@
 </head>
 <body>
     <h1>AI Voice Chatbot</h1>
-    <button id="record-button">Record</button>
+    <form id="chat-form" action="/chat" method="post">
+        <label for="user_input">Enter your message:</label>
+        <input type="text" id="user_input" name="user_input" required>
+        <button type="submit">Send</button>
+    </form>
     <div id="response">
         <audio id="audio" controls style="display: none;"></audio>
     </div>
     
     <script>
-        const recordButton = document.getElementById('record-button');
-        const audioElement = document.getElementById('audio');
-
-        let mediaRecorder;
-        let audioChunks = [];
-
-        recordButton.addEventListener('click', async () => {
-            if (!mediaRecorder || mediaRecorder.state === 'inactive') {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        document.getElementById('chat-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(this);
+            const response = await fetch('/chat', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
                 
-                mediaRecorder.ondataavailable = (event) => {
-                    audioChunks.push(event.data);
-                };
-
-                mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    audioChunks = [];
-                    const formData = new FormData();
-                    formData.append('audio_data', audioBlob, 'recording.webm');
-                    
-                    const response = await fetch('/chat', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (response.ok) {
-                        const audioBlob = await response.blob();
-                        const audioUrl = URL.createObjectURL(audioBlob);
-                        
-                        audioElement.src = audioUrl;
-                        audioElement.style.display = 'block';
-                        audioElement.play();
-                    } else {
-                        const data = await response.json();
-                        alert(data.error || 'An error occurred.');
-                    }
-                };
-
-                mediaRecorder.start();
-                recordButton.textContent = 'Stop';
+                const audio = document.getElementById('audio');
+                audio.src = audioUrl;
+                audio.style.display = 'block';
+                audio.play();
             } else {
-                mediaRecorder.stop();
-                recordButton.textContent = 'Record';
+                const data = await response.json();
+                alert(data.error || 'An error occurred.');
             }
         });
     </script>
