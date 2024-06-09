@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Voice Chatbot</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #f8f9fa;
@@ -14,70 +12,176 @@
             align-items: center;
             height: 100vh;
             margin: 0;
+            font-family: Arial, sans-serif;
         }
-        .container {
+        .chat-container {
             background: white;
             border-radius: 8px;
-            padding: 30px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 500px;
+            height: 500px;
+            max-width: 100%;
+            display: flex;
+            flex-direction: column;
         }
-        .form-group {
-            width: 100%;
-        }
-        #response {
-            margin-top: 20px;
-        }
-        .custom-audio {
-            width: 100%;
-            margin-top: 15px;
-            background: #f1f1f1;
-            border-radius: 5px;
+        .chat-header {
+            background: #007bff;
+            color: white;
             padding: 10px;
+            text-align: center;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .chat-box {
+            padding: 10px;
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: 500px;
+        }
+        .chat-message {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .chat-message.bot {
+            justify-content: flex-start;
+        }
+        .chat-message.user {
+            justify-content: flex-end;
+        }
+        .chat-message img {
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .chat-message.bot img {
+            order: 0;
+        }
+        .chat-message.user img {
+            order: 1;
+            margin-right: 0;
+            margin-left: 10px;
+        }
+        .chat-message div {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 60%;
+        }
+        .chat-message.user div {
+            background: #007bff;
+            color: white;
+        }
+        .chat-footer {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid #e9ecef;
+        }
+        .chat-input {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 20px;
+            border: 1px solid #ced4da;
+            outline: none;
+        }
+        .send-btn {
+            background: #007bff;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            margin-left: 10px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        .send-btn:focus {
+            outline: none;
+        }
+        @media (max-width: 600px) {
+            .chat-container {
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+            }
+            .chat-header, .chat-footer {
+                padding: 10px;
+            }
+            .chat-box {
+                padding: 10px;
+            }
+            .send-btn {
+                padding: 10px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="text-center">AI Voice Chatbot</h1>
-        <form id="chat-form" action="/chat" method="post" class="form-inline justify-content-center">
-            <div class="form-group mb-2">
-                <input type="text" class="form-control" id="user_input" name="user_input" placeholder="Enter your message" required>
+    <div class="chat-container">
+        <div class="chat-header">
+            AI Voice Chatbot
+        </div>
+        <div class="chat-box" id="chat-box">
+            <div class="chat-message bot">
+                <img src="https://miro.medium.com/v2/resize:fit:1400/1*lxuPZZ1McCgiXNok5_Vlfg.jpeg" alt="Bot Icon" width="40" height="40">
+
+                <div>Hello, I am a Chatbot, how may I help you?</div>
             </div>
-            <button type="submit" class="btn btn-primary mb-2 ml-2">Send</button>
-        </form>
-        <div id="response" class="text-center">
-            <audio id="audio" class="custom-audio" controls style="display: none;"></audio>
+        </div>
+
+        <div class="chat-footer">
+            <input type="text" class="chat-input" id="user_input" placeholder="Enter your message" required>
+            <button class="send-btn" id="send-btn">Send</button>
         </div>
     </div>
 
-    <!-- Bootstrap JS and dependencies -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
     <script>
-        document.getElementById('chat-form').addEventListener('submit', async function(event) {
-            event.preventDefault();
-
-            const formData = new FormData(this);
-            const response = await fetch('/chat', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (response.ok) {
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
-
-                const audio = document.getElementById('audio');
-                audio.src = audioUrl;
-                audio.style.display = 'block';
-                audio.play();
-            } else {
-                const data = await response.json();
-                alert(data.error || 'An error occurred.');
+        document.getElementById('send-btn').addEventListener('click', sendMessage);
+        document.getElementById('user_input').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
             }
         });
+
+        async function sendMessage() {
+            const inputField = document.getElementById('user_input');
+            const message = inputField.value;
+
+            if (message.trim() !== '') {
+                addMessage('user', message);
+                inputField.value = '';
+
+                const formData = new FormData();
+                formData.append('user_input', message);
+
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const audioBlob = await response.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+                    addMessage('bot', 'I have sent you an audio response.');
+                } else {
+                    const data = await response.json();
+                    addMessage('bot', data.error || 'An error occurred.');
+                }
+            }
+        }
+
+        function addMessage(sender, message) {
+            const chatBox = document.getElementById('chat-box');
+            const messageElement = document.createElement('div');
+            messageElement.className = `chat-message ${sender}`;
+            messageElement.innerHTML = `
+                <img src="${sender === 'bot' ? 'bot-icon.png' : 'user-icon.png'}" alt="${sender} Icon" width="40" height="40">
+                <div>${message}</div>
+            `;
+
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
     </script>
 </body>
 </html>
