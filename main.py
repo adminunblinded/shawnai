@@ -3,8 +3,6 @@ import openai
 import requests
 import os
 import io
-import wave
-import speech_recognition as sr
 
 app = Flask(__name__)
 
@@ -52,43 +50,19 @@ def text_to_speech(text):
         print(f"Error: {response.status_code}, {response.text}")
         return None
 
-# Function to convert speech to text using speech_recognition
-def speech_to_text(audio_data):
-    recognizer = sr.Recognizer()
-    with sr.AudioFile(audio_data) as source:
-        audio = recognizer.record(source)
-        try:
-            text = recognizer.recognize_google(audio)
-            return text
-        except sr.UnknownValueError:
-            return "Sorry, I could not understand the audio."
-        except sr.RequestError as e:
-            return f"Could not request results; {e}"
-
 @app.route('/')
 def index():
     return render_template('index.html')
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    if 'audio_data' not in request.files:
-        return jsonify({"error": "No audio file provided"}), 400
-
-    audio_file = request.files['audio_data']
-    audio_data = io.BytesIO(audio_file.read())
+    user_input = request.form['user_input']
+    bot_response = generate_response(user_input)
     
-    # Ensure the audio data is in WAV format directly (assumes proper client-side conversion)
-    user_text = speech_to_text(audio_data)
+    audio_data = text_to_speech(bot_response)
     
-    if "Sorry" in user_text:
-        return jsonify({"error": user_text}), 400
-
-    bot_response = generate_response(user_text)
-    
-    response_audio = text_to_speech(bot_response)
-    
-    if response_audio:
-        return send_file(response_audio, mimetype='audio/mpeg', as_attachment=False, attachment_filename='response.mp3')
+    if audio_data:
+        return send_file(audio_data, mimetype='audio/mpeg', as_attachment=False, attachment_filename='response.mp3')
     else:
         return jsonify({"error": "TTS conversion failed"}), 500
 
