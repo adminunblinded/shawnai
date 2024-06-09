@@ -7,3 +7,4 @@ MarkupSafe==1.1.1
 Werkzeug==1.0.1
 openai==0.28
 SpeechRecognition==3.10.4
+pydub==0.25.1
