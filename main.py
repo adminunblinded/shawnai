@@ -26,7 +26,7 @@ def transcribe():
 
     # Get ChatGPT response
     response = openai.Completion.create(
-        engine="gpt-3.5-turbo3",
+        engine="gpt-3.5-turbo",
         prompt=text,
         max_tokens=1024,
         n=1,
