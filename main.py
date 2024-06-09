@@ -52,12 +52,12 @@ def text_to_speech(text):
         return None
 
 # Function to convert speech to text using speech_recognition
-def speech_to_text(audio_file):
+def speech_to_text(audio_data):
     recognizer = sr.Recognizer()
-    with sr.AudioFile(audio_file) as source:
-        audio_data = recognizer.record(source)
+    with sr.AudioFile(audio_data) as source:
+        audio = recognizer.record(source)
         try:
-            text = recognizer.recognize_google(audio_data)
+            text = recognizer.recognize_google(audio)
             return text
         except sr.UnknownValueError:
             return "Sorry, I could not understand the audio."
@@ -74,17 +74,18 @@ def chat():
         return jsonify({"error": "No audio file provided"}), 400
 
     audio_file = request.files['audio_data']
-    user_text = speech_to_text(audio_file)
+    audio_data = io.BytesIO(audio_file.read())
+    user_text = speech_to_text(audio_data)
     
     if "Sorry" in user_text:
         return jsonify({"error": user_text}), 400
 
     bot_response = generate_response(user_text)
     
-    audio_data = text_to_speech(bot_response)
+    response_audio = text_to_speech(bot_response)
     
-    if audio_data:
-        return send_file(audio_data, mimetype='audio/mpeg', as_attachment=False, attachment_filename='response.mp3')
+    if response_audio:
+        return send_file(response_audio, mimetype='audio/mpeg', as_attachment=False, attachment_filename='response.mp3')
     else:
         return jsonify({"error": "TTS conversion failed"}), 500
 
