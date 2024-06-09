@@ -22,17 +22,17 @@
         recordButton.addEventListener('click', async () => {
             if (!mediaRecorder || mediaRecorder.state === 'inactive') {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/wav' });
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
                 
                 mediaRecorder.ondataavailable = (event) => {
                     audioChunks.push(event.data);
                 };
 
                 mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     audioChunks = [];
                     const formData = new FormData();
-                    formData.append('audio_data', audioBlob, 'recording.wav');
+                    formData.append('audio_data', audioBlob, 'recording.webm');
                     
                     const response = await fetch('/chat', {
                         method: 'POST',
