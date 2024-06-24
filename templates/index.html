@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Voice Chatbot</title>
+    <title>AI Chatbot</title>
     <style>
         body {
             background-color: #f8f9fa;
@@ -125,7 +125,6 @@
                 sendMessage();
             }
         });
-
         async function sendMessage() {
             const inputField = document.getElementById('user_input');
             const message = inputField.value;
@@ -143,28 +142,10 @@
                 });
 
                 if (response.ok) {
-                    const audioBlob = await response.blob();
-                    const audioUrl = URL.createObjectURL(audioBlob);
-
-                    const audio = new Audio(audioUrl);
-
-                    audio.addEventListener('canplaythrough', () => {
-                        const playPromise = audio.play();
-                        if (playPromise !== undefined) {
-                            playPromise.then(() => {
-                                // Automatic playback started!
-                            }).catch(error => {
-                                // Auto-play was prevented
-                                // Show a UI element to let the user manually start playback
-                                console.log('Auto-play was prevented');
-                            });
-                        }
-                    });
-                    
-                    addMessage('bot', 'I have sent you an audio response.');
-                } else {
                     const data = await response.json();
-                    addMessage('bot', data.error || 'An error occurred.');
+                    addMessage('bot', data.response);
+                } else {
+                    addMessage('bot', 'An error occurred while fetching the response.');
                 }
             }
         }
