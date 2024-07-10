@@ -47,8 +47,10 @@ def load_chunks_from_file(filename='chunks.pkl'):
 # Preprocess and save chunks if not already done
 chunks_file = 'chunks.pkl'
 if not os.path.exists(chunks_file):
-    with open('influence.txt', 'r', encoding='utf-8') as file:
-        text = file.read()
+    text = ""
+    for filename in ['influence.txt', 'MSPM.txt', 'Sean Speaking.txt', 'Group Influence Grand Cayman.txt']:
+        with open(filename, 'r', encoding='utf-8') as file:
+            text += file.read() + "\n"  # Read and concatenate the text from all files
     chunks = split_text(text)
     save_chunks_to_file(chunks)
 else:
@@ -73,7 +75,7 @@ def generate_relevant_response(prompt, chunk):
             {"role": "user", "content": chunk},
             {"role": "user", "content": prompt}
         ],
-        max_tokens=150
+        max_tokens=250
     )
     return response['choices'][0]['message']['content']
 
