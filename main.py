@@ -48,7 +48,7 @@ def load_chunks_from_file(filename='chunks.pkl'):
 chunks_file = 'chunks.pkl'
 if not os.path.exists(chunks_file):
     text = ""
-    for filename in ['influence.txt', 'MSPM.txt', 'Sean Speaking.txt', 'Group Influence Grand Cayman.txt']:
+    for filename in ['influence.txt', 'MSPM.txt', 'Sean-Speaking.txt', 'Group-Influence-Grand-Cayman.txt']:
         with open(filename, 'r', encoding='utf-8') as file:
             text += file.read() + "\n"  # Read and concatenate the text from all files
     chunks = split_text(text)
